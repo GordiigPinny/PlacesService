@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# MacOS files
+*.DS_Store
+*.idea
+
+# db
+*.sqlite3
+
+# Specific files
+settings_local.py
+debug.env
