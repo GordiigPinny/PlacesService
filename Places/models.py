@@ -19,6 +19,22 @@ class Place(models.Model):
         ratings_vals = [x.rating for x in self.ratings]
         return sum(ratings_vals) / len(ratings_vals) if len(ratings_vals) != 0 else 0.0
 
+    @property
+    def accepts_cnt(self):
+        return self.accepts.count()
+
+    @property
+    def accept_type(self):
+        cnt = self.accepts_cnt
+        if cnt < 50:
+            return 'Непроверенное место'
+        elif 50 <= cnt < 100:
+            return 'Слабо проверенное место'
+        elif 100 <= cnt < 200:
+            return 'Проверенное многими место'
+        else:
+            return 'Проверенное место'
+
     def soft_delete(self):
         self.deleted_flg = True
         self.save(update_fields=['deleted_flg'])
