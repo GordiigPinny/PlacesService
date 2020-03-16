@@ -37,6 +37,11 @@ class AcceptDetailView(RetrieveDestroyAPIView):
     serializer_class = AcceptSerializer
     permission_classes = (IsAuthenticated, )
 
+    def get_queryset(self):
+        with_deleted = self.request.query_params.get('show_deleted', False) and \
+                       AuthRequester().is_superuser(get_token_from_request(self.request))
+        return Accept.objects.filter(deleted_flg__in=[with_deleted, False])
+
     def perform_destroy(self, instance: Accept):
         instance.deleted_flg = True
         instance.save()
@@ -67,6 +72,11 @@ class RatingDetailView(RetrieveDestroyAPIView):
     serializer_class = RatingSerializer
     permission_classes = (IsAuthenticated, )
 
+    def get_queryset(self):
+        with_deleted = self.request.query_params.get('show_deleted', False) and \
+                       AuthRequester().is_superuser(get_token_from_request(self.request))
+        return Rating.objects.filter(deleted_flg__in=[with_deleted, False])
+
     def perform_destroy(self, instance: Rating):
         instance.deleted_flg = True
         instance.save()
@@ -85,9 +95,9 @@ class PlaceImagesListView(ListCreateAPIView):
                        AuthRequester().is_superuser(get_token_from_request(self.request))
         place_id = self.request.query_params.get('place_id', None)
         if place_id is None:
-            return Rating.objects.filter(deleted_flg__in=[False, with_deleted])
+            return PlaceImage.objects.filter(deleted_flg__in=[False, with_deleted])
         else:
-            return Rating.objects.filter(deleted_flg__in=[False, with_deleted], place_id=place_id)
+            return PlaceImage.objects.filter(deleted_flg__in=[False, with_deleted], place_id=place_id)
 
 
 class PlaceImageDetailView(RetrieveDestroyAPIView):
@@ -96,6 +106,11 @@ class PlaceImageDetailView(RetrieveDestroyAPIView):
     """
     serializer_class = PlaceImageSerializer
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        with_deleted = self.request.query_params.get('show_deleted', False) and \
+                       AuthRequester().is_superuser(get_token_from_request(self.request))
+        return PlaceImage.objects.filter(deleted_flg__in=[with_deleted, False])
 
     def perform_destroy(self, instance: PlaceImage):
         instance.deleted_flg = True
@@ -112,8 +127,8 @@ class PlacesListView(ListCreateAPIView):
 
     def get_queryset(self):
         lookup_fields = {}
-        lookup_fields['deleted_flg'] = self.request.query_params.get('show_deleted', False) and \
-                                       AuthRequester().is_superuser(get_token_from_request(self.request))
+        lookup_fields['deleted_flg__in'] = [self.request.query_params.get('show_deleted', False) and
+                                            AuthRequester().is_superuser(get_token_from_request(self.request)), False]
         latitude_1 = self.request.query_params.get('latitude_1', None)
         longitude_1 = self.request.query_params.get('longitude_1', None)
         latitude_2 = self.request.query_params.get('latitude_2', None)
@@ -135,6 +150,11 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView):
     """
     serializer_class = PlaceDetailSerializer
     permission_classes = (IsAuthenticated, UpdateOnlyBySuperuser, DeleteOnlyBySuperuser)
+
+    def get_queryset(self):
+        with_deleted = self.request.query_params.get('show_deleted', False) and \
+                       AuthRequester().is_superuser(get_token_from_request(self.request))
+        return Place.objects.filter(deleted_flg__in=[with_deleted, False])
 
     def perform_destroy(self, instance: Place):
         instance.soft_delete()

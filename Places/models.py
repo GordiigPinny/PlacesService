@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import CheckConstraint, Q
 
 
 class Place(models.Model):
@@ -16,7 +17,7 @@ class Place(models.Model):
 
     @property
     def rating(self) -> float:
-        ratings_vals = [x.rating for x in self.ratings]
+        ratings_vals = [x.rating for x in self.ratings.all()]
         return sum(ratings_vals) / len(ratings_vals) if len(ratings_vals) != 0 else 0.0
 
     @property
@@ -67,6 +68,14 @@ class Rating(models.Model):
     updated_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f'Rating({self.id}) {self.rating} on place {self.place}'
+
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(rating__gte=0) & Q(rating__lte=5), name='rating_number_constraint'),
+        ]
+
 
 class PlaceImage(models.Model):
     """
@@ -77,3 +86,6 @@ class PlaceImage(models.Model):
     pic_link = models.URLField(null=False, blank=False)
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'Image({self.id}) of place {self.place}'
