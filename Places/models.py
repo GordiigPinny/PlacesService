@@ -19,6 +19,10 @@ class Place(models.Model):
         ratings_vals = [x.rating for x in self.ratings]
         return sum(ratings_vals) / len(ratings_vals) if len(ratings_vals) != 0 else 0.0
 
+    def soft_delete(self):
+        self.deleted_flg = True
+        self.save(update_fields=['deleted_flg'])
+
     def __str__(self):
         return f'Place {self.name}'
 
