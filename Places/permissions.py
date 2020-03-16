@@ -26,3 +26,16 @@ class UpdateOnlyBySuperuser(BasePermission):
         if request.method != 'PATCH':
             return True
         return AuthRequester().is_superuser(get_token_from_request(request))
+
+
+class DeleteOnlyBySuperuser(BasePermission):
+    """
+    Пермишн на удаление объектов только суперюзером
+    """
+    message = 'Only superuser can delete instances'
+
+    def has_permission(self, request, view):
+        if request.method != 'DELETE':
+            return True
+        return AuthRequester().is_superuser(get_token_from_request(request))
+
