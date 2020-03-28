@@ -1,120 +1,92 @@
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.views import APIView, Response, Request
 from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.pagination import LimitOffsetPagination
-from Places.permissions import IsAuthenticated, IsModerator, IsSuperuser, CreateOnlyBySuperuser, UpdateOnlyBySuperuser, \
-    DeleteOnlyBySuperuser
 from Places.serializers import AcceptSerializer, RatingSerializer, PlaceImageSerializer, PlaceListSerializer, \
     PlaceDetailSerializer
 from Places.models import Accept, Rating, PlaceImage, Place
-from ApiRequesters.Auth.AuthRequester import AuthRequester
-from ApiRequesters.utils import get_token_from_request
 
 
-class AcceptsListView(ListCreateAPIView):
+class BaseListCreateView(ListCreateAPIView):
+    """
+    Базовый класс для ListCreate для Accept, Rating, PlaceImage
+    """
+    model_class = None
+
+    def get_queryset(self):
+        place_id = self.request.query_params.get('place_id', None)
+        with_deleted = self.request.query_params.get('with_deleted', 'False')
+        with_deleted = with_deleted.lower() == 'true'
+        all_ = self.model_class.objects.with_deleted() if with_deleted else self.model_class.objects
+        if place_id is None:
+            return all_.all()
+        else:
+            return all_.filter(place_id=place_id)
+
+
+class BaseRetrieveDestroyView(RetrieveDestroyAPIView):
+    """
+    Базовый класс для RetriveDestroy для Accept, Rating, PlaceImage
+    """
+    model_class = None
+
+    def get_queryset(self):
+        with_deleted = self.request.query_params.get('with_deleted', 'False')
+        with_deleted = with_deleted.lower() == 'true'
+        return self.model_class.objects.with_deleted().all() if with_deleted else self.model_class.objects.all()
+
+    def perform_destroy(self, instance):
+        instance.soft_delete()
+
+
+class AcceptsListView(BaseListCreateView):
     """
     Вьюха для просмотра списка подтверждений
     """
+    model_class = Accept
     serializer_class = AcceptSerializer
-    permission_classes = (IsAuthenticated, )
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        place_id = self.request.query_params.get('place_id', None)
-        if place_id is None:
-            return Accept.objects.filter(deleted_flg__in=[False, with_deleted])
-        else:
-            return Accept.objects.filter(deleted_flg__in=[False, with_deleted], place_id=place_id)
 
-
-class AcceptDetailView(RetrieveDestroyAPIView):
+class AcceptDetailView(BaseRetrieveDestroyView):
     """
     Вьюха для получения и удаления определенного подтверждения
     """
+    model_class = Accept
     serializer_class = AcceptSerializer
-    permission_classes = (IsAuthenticated, )
-
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        return Accept.objects.filter(deleted_flg__in=[with_deleted, False])
-
-    def perform_destroy(self, instance: Accept):
-        instance.deleted_flg = True
-        instance.save()
 
 
-class RatingsListView(ListCreateAPIView):
+class RatingsListView(BaseListCreateView):
     """
     Вьюха для просмотра списка рейтингов
     """
+    model_class = Rating
     serializer_class = RatingSerializer
-    permission_classes = (IsAuthenticated, )
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        place_id = self.request.query_params.get('place_id', None)
-        if place_id is None:
-            return Rating.objects.filter(deleted_flg__in=[False, with_deleted])
-        else:
-            return Rating.objects.filter(deleted_flg__in=[False, with_deleted], place_id=place_id)
 
-
-class RatingDetailView(RetrieveDestroyAPIView):
+class RatingDetailView(BaseRetrieveDestroyView):
     """
     Вьюха для получения и удаления рейтинга
     """
+    model_class = Rating
     serializer_class = RatingSerializer
-    permission_classes = (IsAuthenticated, )
-
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        return Rating.objects.filter(deleted_flg__in=[with_deleted, False])
-
-    def perform_destroy(self, instance: Rating):
-        instance.deleted_flg = True
-        instance.save()
 
 
-class PlaceImagesListView(ListCreateAPIView):
+class PlaceImagesListView(BaseListCreateView):
     """
     Вьюха для получения списка изображений места
     """
+    model_class = PlaceImage
     serializer_class = PlaceImageSerializer
-    permission_classes = (IsAuthenticated, )
     pagination_class = LimitOffsetPagination
 
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        place_id = self.request.query_params.get('place_id', None)
-        if place_id is None:
-            return PlaceImage.objects.filter(deleted_flg__in=[False, with_deleted])
-        else:
-            return PlaceImage.objects.filter(deleted_flg__in=[False, with_deleted], place_id=place_id)
 
-
-class PlaceImageDetailView(RetrieveDestroyAPIView):
+class PlaceImageDetailView(BaseRetrieveDestroyView):
     """
     Вьюха для получения и удаления картинки места
     """
+    model_class = PlaceImage
     serializer_class = PlaceImageSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        return PlaceImage.objects.filter(deleted_flg__in=[with_deleted, False])
-
-    def perform_destroy(self, instance: PlaceImage):
-        instance.deleted_flg = True
-        instance.save()
 
 
 class PlacesListView(ListCreateAPIView):
@@ -122,13 +94,13 @@ class PlacesListView(ListCreateAPIView):
     Вьюха для получения списка мест
     """
     serializer_class = PlaceListSerializer
-    permission_classes = (IsAuthenticated, )
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
         lookup_fields = {}
-        lookup_fields['deleted_flg__in'] = [self.request.query_params.get('show_deleted', False) and
-                                            AuthRequester().is_superuser(get_token_from_request(self.request)), False]
+        with_deleted = self.request.query_params.get('with_deleted', 'False')
+        with_deleted = with_deleted.lower() == 'true'
+        all_ = Place.objects.with_deleted() if with_deleted else Place.objects
         latitude_1 = self.request.query_params.get('latitude_1', None)
         longitude_1 = self.request.query_params.get('longitude_1', None)
         latitude_2 = self.request.query_params.get('latitude_2', None)
@@ -141,7 +113,7 @@ class PlacesListView(ListCreateAPIView):
             lookup_fields['longitude__lte'] = max(longitude_1, longitude_2)
         elif len(list(filter(lambda x: x is not None, llll))) != 0:
             raise ValidationError({'error': 'You need to write all 4 coords for area filtering'})
-        return Place.objects.filter(**lookup_fields)
+        return all_.filter(**lookup_fields)
 
 
 class PlaceDetailView(RetrieveUpdateDestroyAPIView):
@@ -149,12 +121,17 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView):
     Вьюха для получения, изменения и удаления места
     """
     serializer_class = PlaceDetailSerializer
-    permission_classes = (IsAuthenticated, UpdateOnlyBySuperuser, DeleteOnlyBySuperuser)
 
     def get_queryset(self):
-        with_deleted = self.request.query_params.get('show_deleted', False) and \
-                       AuthRequester().is_superuser(get_token_from_request(self.request))
-        return Place.objects.filter(deleted_flg__in=[with_deleted, False])
+        with_deleted = self.request.query_params.get('with_deleted', 'False')
+        with_deleted = with_deleted.lower() == 'true'
+        return Place.objects.with_deleted().all() if with_deleted else Place.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, args, kwargs)
+        if response.status_code == 200:
+            response.status_code = 202
+        return response
 
     def perform_destroy(self, instance: Place):
         instance.soft_delete()

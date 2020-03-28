@@ -13,11 +13,8 @@ def delete_all_after_place(sender, instance: Place, created, update_fields, **kw
     if 'deleted_flg' not in update_fields:
         return
     for accept in instance.accepts.all():
-        accept.deleted_flg = True
-        accept.save()
+        accept.soft_delete()
     for rating in instance.ratings.all():
-        rating.deleted_flg = True
-        rating.save()
+        rating.soft_delete()
     for img in instance.images.all():
-        img.deleted_flg = True
-        img.save()
+        img.soft_delete()
