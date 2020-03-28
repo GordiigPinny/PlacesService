@@ -8,6 +8,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     """
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
+    place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
 
     class Meta:
         model = PlaceImage
@@ -38,6 +39,7 @@ class RatingSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(min_value=0, max_value=5)
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
+    place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
 
     class Meta:
         model = PlaceImage
@@ -67,6 +69,7 @@ class AcceptSerializer(serializers.ModelSerializer):
     """
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
+    place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
 
     class Meta:
         model = Accept

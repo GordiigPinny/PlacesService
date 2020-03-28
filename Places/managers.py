@@ -6,10 +6,10 @@ class PlacesManager(Manager):
     ORM менеджер для мест
     """
     def get_queryset(self):
-        super().get_queryset().filter(deleted_flg=False)
+        return super().get_queryset().filter(deleted_flg=False)
 
     def with_deleted(self):
-        super().get_queryset()
+        return super().get_queryset()
 
 
 class AcceptsManager(Manager):
@@ -17,10 +17,10 @@ class AcceptsManager(Manager):
     ORM менеджер для подтверждений
     """
     def get_queryset(self):
-        super().get_queryset().filter(deleted_flg=False)
+        return super().get_queryset().filter(deleted_flg=False)
 
     def with_deleted(self):
-        super().get_queryset()
+        return super().get_queryset()
 
 
 class RatingsManager(Manager):
@@ -28,10 +28,10 @@ class RatingsManager(Manager):
     ORM менеджер для рейтинга
     """
     def get_queryset(self):
-        super().get_queryset().filter(deleted_flg=False)
+        return super().get_queryset().filter(deleted_flg=False)
 
     def with_deleted(self):
-        super().get_queryset()
+        return super().get_queryset()
 
 
 class PlaceImagesManager(Manager):
@@ -39,7 +39,7 @@ class PlaceImagesManager(Manager):
     ORM менеджер для фото мест
     """
     def get_queryset(self):
-        super().get_queryset().filter(deleted_flg=False)
+        return super().get_queryset().filter(deleted_flg=False)
 
     def with_deleted(self):
-        super().get_queryset()
+        return super().get_queryset()
