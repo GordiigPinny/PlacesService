@@ -1,5 +1,6 @@
 from django.db import models
-from django.db.models import CheckConstraint, Q
+from django.db.models import CheckConstraint, Q, Avg
+from Places.managers import PlaceImagesManager, PlacesManager, RatingsManager, AcceptsManager
 
 
 class Place(models.Model):
@@ -15,10 +16,13 @@ class Place(models.Model):
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
 
+    objects = PlacesManager()
+
     @property
     def rating(self) -> float:
-        ratings_vals = [x.rating for x in self.ratings.all()]
-        return sum(ratings_vals) / len(ratings_vals) if len(ratings_vals) != 0 else 0.0
+        rating = self.ratings.filter(deleted_flg=False).aggregate(Avg('rating')).values()
+        rating = list(rating)
+        return 0 if len(rating) == 0 else rating[0]
 
     @property
     def accepts_cnt(self):
@@ -53,6 +57,12 @@ class Accept(models.Model):
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
 
+    objects = AcceptsManager()
+
+    def soft_delete(self):
+        self.deleted_flg = True
+        self.save(update_fields=['deleted_flg'])
+
     def __str__(self):
         return f'Accept({self.id}) by {self.created_by}, on place {self.place.id}'
 
@@ -67,6 +77,12 @@ class Rating(models.Model):
     created_dt = models.DateTimeField(auto_now_add=True)
     updated_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
+
+    objects = RatingsManager()
+
+    def soft_delete(self):
+        self.deleted_flg = True
+        self.save(update_fields=['deleted_flg'])
 
     def __str__(self):
         return f'Rating({self.id}) {self.rating} on place {self.place}'
@@ -86,6 +102,12 @@ class PlaceImage(models.Model):
     pic_link = models.URLField(null=False, blank=False)
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
+
+    objects = PlaceImagesManager()
+
+    def soft_delete(self):
+        self.deleted_flg = True
+        self.save(update_fields=['deleted_flg'])
 
     def __str__(self):
         return f'Image({self.id}) of place {self.place}'
