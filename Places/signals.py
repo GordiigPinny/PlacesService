@@ -10,6 +10,8 @@ def delete_all_after_place(sender, instance: Place, created, update_fields, **kw
     """
     if created:
         return
+    if update_fields is None:
+        return
     if 'deleted_flg' not in update_fields:
         return
     for accept in instance.accepts.all():

@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import CheckConstraint, Q
+from django.db.models import CheckConstraint, Q, Avg
 from Places.managers import PlaceImagesManager, PlacesManager, RatingsManager, AcceptsManager
 
 
@@ -20,8 +20,9 @@ class Place(models.Model):
 
     @property
     def rating(self) -> float:
-        ratings_vals = [x.rating for x in self.ratings.all()]
-        return sum(ratings_vals) / len(ratings_vals) if len(ratings_vals) != 0 else 0.0
+        rating = self.ratings.filter(deleted_flg=False).aggregate(Avg('rating')).values()
+        rating = list(rating)
+        return 0 if len(rating) == 0 else rating[0]
 
     @property
     def accepts_cnt(self):

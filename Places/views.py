@@ -101,18 +101,30 @@ class PlacesListView(ListCreateAPIView):
         with_deleted = self.request.query_params.get('with_deleted', 'False')
         with_deleted = with_deleted.lower() == 'true'
         all_ = Place.objects.with_deleted() if with_deleted else Place.objects
-        latitude_1 = self.request.query_params.get('latitude_1', None)
-        longitude_1 = self.request.query_params.get('longitude_1', None)
-        latitude_2 = self.request.query_params.get('latitude_2', None)
-        longitude_2 = self.request.query_params.get('longitude_2', None)
+
+        only_mine = self.request.query_params.get('only_mine', 'False')
+        only_mine = only_mine.lower() == 'true'
+        if only_mine:
+            try:
+                lookup_fields['created_by'] = self.request.query_params['user_id']
+            except KeyError:
+                raise ValidationError('Для возврата только своих мест необходимо указать user_id')
+
+        latitude_1 = self.request.query_params.get('lat1', None)
+        longitude_1 = self.request.query_params.get('long1', None)
+        latitude_2 = self.request.query_params.get('lat2', None)
+        longitude_2 = self.request.query_params.get('long2', None)
         llll = (latitude_1, latitude_2, longitude_1, longitude_2)
         if all(llll):
-            lookup_fields['latitude__gte'] = min(latitude_1, latitude_2)
-            lookup_fields['longitude__gte'] = min(longitude_1, longitude_2)
-            lookup_fields['latitude__lte'] = max(latitude_1, latitude_2)
-            lookup_fields['longitude__lte'] = max(longitude_1, longitude_2)
+            try:
+                lookup_fields['latitude__gte'] = min(float(latitude_1), float(latitude_2))
+                lookup_fields['longitude__gte'] = min(float(longitude_1), float(longitude_2))
+                lookup_fields['latitude__lte'] = max(float(latitude_1), float(latitude_2))
+                lookup_fields['longitude__lte'] = max(float(longitude_1), float(longitude_2))
+            except (ValueError, TypeError):
+                raise ValidationError('Для фильтрации по сектору карты параметры должны быть числами')
         elif len(list(filter(lambda x: x is not None, llll))) != 0:
-            raise ValidationError({'error': 'You need to write all 4 coords for area filtering'})
+            raise ValidationError('Для фильтрации по сектору карты нужны 4 координаты')
         return all_.filter(**lookup_fields)
 
 

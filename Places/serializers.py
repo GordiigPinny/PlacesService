@@ -9,6 +9,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
+    created_by = serializers.IntegerField(min_value=1, required=True)
 
     class Meta:
         model = PlaceImage
@@ -40,6 +41,8 @@ class RatingSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
+    current_rating = serializers.FloatField(read_only=True, source='place.rating')
+    created_by = serializers.IntegerField(min_value=1, required=True)
 
     class Meta:
         model = PlaceImage
@@ -48,11 +51,19 @@ class RatingSerializer(serializers.ModelSerializer):
             'created_by',
             'place_id',
             'rating',
+            'current_rating',
             'created_dt',
             'deleted_flg'
         ]
 
     def create(self, validated_data):
+        try:
+            place_id, created_by = validated_data['place'].id, validated_data['created_by']
+            rt = Rating.objects\
+                .get(place_id=place_id, created_by=created_by)
+            rt.soft_delete()
+        except Rating.DoesNotExist:
+            pass
         new = Rating.objects.create(**validated_data)
         return new
 
@@ -70,6 +81,7 @@ class AcceptSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
+    created_by = serializers.IntegerField(min_value=1, required=True)
 
     class Meta:
         model = Accept
@@ -82,6 +94,9 @@ class AcceptSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        place_id, created_by = validated_data['place'].id, validated_data['created_by']
+        if Accept.objects.filter(created_by=created_by, place_id=place_id).exists():
+            raise serializers.ValidationError('Вы уже подтвердили существование этого места')
         new = Accept.objects.create(**validated_data)
         return new
 
@@ -100,6 +115,8 @@ class PlaceListSerializer(serializers.ModelSerializer):
     accept_type = serializers.SerializerMethodField()
     accepts_cnt = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    is_created_by_me = serializers.SerializerMethodField()
+    created_by = serializers.IntegerField(min_value=1, write_only=True, required=True)
 
     class Meta:
         model = Place
@@ -115,6 +132,7 @@ class PlaceListSerializer(serializers.ModelSerializer):
             'accepts_cnt',
             'deleted_flg',
             'created_by',
+            'is_created_by_me',
         ]
 
     def get_accept_type(self, instance: Place):
@@ -126,6 +144,13 @@ class PlaceListSerializer(serializers.ModelSerializer):
     def get_rating(self, instance: Place):
         return instance.rating
 
+    def get_is_created_by_me(self, instance: Place):
+        try:
+            user_id = self.context['request'].query_params['user_id']
+            return instance.created_by == user_id
+        except KeyError:
+            return False
+
     def create(self, validated_data):
         new = Place.objects.create(**validated_data)
         return new
@@ -136,11 +161,30 @@ class PlaceDetailSerializer(PlaceListSerializer):
     Сериализатор детального представления места
     """
     created_dt = serializers.DateTimeField(read_only=True)
+    my_rating = serializers.SerializerMethodField()
+    is_accepted_by_me = serializers.SerializerMethodField()
+    created_by = serializers.IntegerField(min_value=1)
 
     class Meta(PlaceListSerializer.Meta):
         fields = PlaceListSerializer.Meta.fields + [
             'created_dt',
+            'my_rating',
+            'is_accepted_by_me',
         ]
+
+    def get_my_rating(self, instance: Place):
+        try:
+            user_id = self.context['request'].query_params['user_id']
+            return Rating.objects.get(place_id=instance.id, created_by=user_id)
+        except (KeyError, Rating.DoesNotExist):
+            return 0
+
+    def get_is_accepted_by_me(self, instance: Place):
+        try:
+            user_id = self.context['request'].query_params['user_id']
+            return Accept.objects.filter(place_id=instance.id, created_by=user_id).exists()
+        except KeyError:
+            return False
 
     def update(self, instance: Place, validated_data):
         for attr, val in validated_data.items():
