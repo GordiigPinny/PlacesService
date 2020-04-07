@@ -9,6 +9,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
+    pic_link = serializers.URLField(required=True, allow_blank=False, allow_null=False)
     created_by = serializers.IntegerField(min_value=1, required=True)
 
     class Meta:
@@ -27,6 +28,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
         return new
 
     def update(self, instance: PlaceImage, validated_data):
+        validated_data.pop('created_by')
         for attr, val in validated_data.items():
             setattr(instance, attr, val)
         instance.save()
@@ -37,7 +39,7 @@ class RatingSerializer(serializers.ModelSerializer):
     """
     Сериализатор рейтинга
     """
-    rating = serializers.IntegerField(min_value=0, max_value=5)
+    rating = serializers.IntegerField(min_value=0, max_value=5, required=True)
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
@@ -163,7 +165,7 @@ class PlaceDetailSerializer(PlaceListSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     my_rating = serializers.SerializerMethodField()
     is_accepted_by_me = serializers.SerializerMethodField()
-    created_by = serializers.IntegerField(min_value=1)
+    created_by = serializers.IntegerField(min_value=1, read_only=True)
 
     class Meta(PlaceListSerializer.Meta):
         fields = PlaceListSerializer.Meta.fields + [
