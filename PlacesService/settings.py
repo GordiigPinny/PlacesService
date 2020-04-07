@@ -137,13 +137,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MEDIA_URL = '/media/'
 
-ENV_FILE_NAME = 'prod.env'
-
-TESTING = sys.argv[1:2] == ['test']
-
 try:
     from .settings_local import *
 except ImportError:
     pass
 
-ENV = dotenv.main.dotenv_values(ENV_FILE_NAME)
+try:
+    from ApiRequesters.settings import *
+except ImportError as e:
+    raise e

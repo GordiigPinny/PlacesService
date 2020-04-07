@@ -1,4 +1,5 @@
 import requests
+from enum import Enum
 from typing import Dict, Any, Union, Callable, List, Tuple
 from ApiRequesters.exceptions import RequestError, UnexpectedResponse, JsonDecodeError
 
@@ -7,7 +8,7 @@ class BaseApiRequester:
     """
     Базовый класс для общения микросервисов
     """
-    class METHODS:
+    class METHODS(Enum):
         """
         Енум для HTTP-методов
         """
@@ -74,7 +75,7 @@ class BaseApiRequester:
         except requests.exceptions.RequestException:
             raise RequestError()
 
-    def make_request(self, method: str, path_suffix: str, headers: Union[Dict[str, Any], None] = None,
+    def make_request(self, method: Union[METHODS, str], path_suffix: str, headers: Union[Dict[str, Any], None] = None,
                      data: Union[Dict[str, Any], List[Any], None] = None,
                      params: Union[Dict[str, Any], None] = None) -> requests.Response:
         """
@@ -86,6 +87,8 @@ class BaseApiRequester:
         @param data: - Боди (джсон)
         @return: Ответ внешнего сервиса
         """
+        if isinstance(method, self.METHODS):
+            method = method.value
         if method == self.METHODS.GET:
             return self._make_request(method=requests.get, uri=self.api_url + path_suffix, headers=headers,
                                       params=params, data=data)
