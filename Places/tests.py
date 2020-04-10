@@ -12,8 +12,7 @@ class LocalBaseTestCase(BaseTestCase):
                                           created_by=self.user.id)
         self.accept = Accept.objects.create(created_by=self.user.id, place=self.place)
         self.rating = Rating.objects.create(created_by=self.user.id, place=self.place, rating=4)
-        self.place_image = PlaceImage.objects.create(created_by=self.user.id, place=self.place,
-                                                     pic_link='http://wwww.vk.com/')
+        self.place_image = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_id=1)
 
 
 class AcceptsListTestCase(LocalBaseTestCase):
@@ -200,7 +199,7 @@ class PlaceImagesListTestCase(LocalBaseTestCase):
         self.data_201 = {
             'created_by': self.user.id,
             'place_id': self.place.id,
-            'pic_link': self.place_image.pic_link,
+            'pic_id': self.place_image.pic_id,
         }
         self.data_400_1 = {
             'created_by': self.user.id,
@@ -208,23 +207,21 @@ class PlaceImagesListTestCase(LocalBaseTestCase):
         self.data_400_2 = {
             'created_by': self.user.id,
             'place_id': self.place.id + 10000,
-            'pic_link': self.place_image.pic_link,
+            'pic_id': self.place_image.pic_id,
         }
 
     def testGet200_OK(self):
         response = self.get_response_and_check_status(url=self.path)
-        self.fields_test(response, ['id', 'created_by', 'place_id', 'pic_link'])
+        self.fields_test(response, ['id', 'created_by', 'place_id', 'pic_id'])
         self.list_test(response, PlaceImage)
 
     def testGet200_WithDeletedQueryParam(self):
-        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_link='http://www.vk.com/',
-                                            deleted_flg=True)
+        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_id=1, deleted_flg=True)
         response = self.get_response_and_check_status(url=f'{self.path}?with_deleted=True')
         self.assertEqual(len(response), 2, msg='No deleted instance in response')
 
     def testGet200_NoDeletedQueryParam(self):
-        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_link='http://www.vk.com/',
-                                            deleted_flg=True)
+        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_id=1, deleted_flg=True)
         response = self.get_response_and_check_status(url=f'{self.path}')
         self.assertEqual(len(response), 1, msg='Deleted instance in response')
 
@@ -249,11 +246,10 @@ class PlaceImageTestCase(LocalBaseTestCase):
 
     def testGet200_OK(self):
         response = self.get_response_and_check_status(url=self.path)
-        self.fields_test(response, ['id', 'created_by', 'place_id', 'pic_link'])
+        self.fields_test(response, ['id', 'created_by', 'place_id', 'pic_id'])
 
     def testGet200_WithDeletedQueryParam(self):
-        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_link='http://www.vk.com/',
-                                            deleted_flg=True)
+        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_id=1, deleted_flg=True)
         path = self.url_prefix + f'place_images/{deleted.id}/?with_deleted=True'
         _ = self.get_response_and_check_status(url=path)
 
@@ -261,8 +257,7 @@ class PlaceImageTestCase(LocalBaseTestCase):
         _ = self.get_response_and_check_status(url=self.path_404, expected_status_code=404)
 
     def testGet404_NoDeletedQueryParam(self):
-        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_link='http://www.vk.com/',
-                                            deleted_flg=True)
+        deleted = PlaceImage.objects.create(created_by=self.user.id, place=self.place, pic_id=1, deleted_flg=True)
         path = self.url_prefix + f'place_images/{deleted.id}/'
         _ = self.get_response_and_check_status(url=path, expected_status_code=404)
 
