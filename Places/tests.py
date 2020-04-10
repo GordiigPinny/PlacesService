@@ -63,6 +63,10 @@ class AcceptsListTestCase(LocalBaseTestCase):
     def testPost201_OK(self):
         _ = self.post_response_and_check_status(url=self.path, data=self.data_201)
 
+    def testPost401_403_Anon(self):
+        self.token.set_role(self.token.ROLES.ANON)
+        _ = self.post_response_and_check_status(url=self.path, data=self.data_201, expected_status_code=[401, 403])
+
     def testPost400_WrongJSON(self):
         _ = self.post_response_and_check_status(url=self.path, data=self.data_400_1, expected_status_code=400)
 

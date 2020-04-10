@@ -14,7 +14,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
     pic_id = serializers.IntegerField(min_value=1, required=True, allow_null=False)
-    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
+    created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True)
 
     class Meta:
         model = PlaceImage
@@ -68,7 +68,7 @@ class RatingSerializer(serializers.ModelSerializer):
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
     current_rating = serializers.FloatField(read_only=True, source='place.rating')
-    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
+    created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True)
 
     class Meta:
         model = PlaceImage
@@ -118,7 +118,7 @@ class AcceptSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
-    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
+    created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True)
 
     class Meta:
         model = Accept
@@ -164,7 +164,7 @@ class PlaceListSerializer(serializers.ModelSerializer):
     accepts_cnt = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     is_created_by_me = serializers.SerializerMethodField()
-    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True, write_only=True)
+    created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True, write_only=True)
 
     class Meta:
         model = Place
