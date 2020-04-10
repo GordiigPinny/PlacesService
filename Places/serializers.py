@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from Places.models import Place, Accept, Rating, PlaceImage
+from ApiRequesters.Media.MediaRequester import MediaRequester
+from ApiRequesters.utils import get_token_from_request
+from ApiRequesters.exceptions import BaseApiRequestError
 
 
 class PlaceImageSerializer(serializers.ModelSerializer):
@@ -9,7 +12,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
-    pic_link = serializers.URLField(required=True, allow_blank=False, allow_null=False)
+    pic_id = serializers.IntegerField(min_value=1, required=True, allow_null=False)
     created_by = serializers.IntegerField(min_value=1, required=True)
 
     class Meta:
@@ -18,10 +21,19 @@ class PlaceImageSerializer(serializers.ModelSerializer):
             'id',
             'created_by',
             'place_id',
-            'pic_link',
+            'pic_id',
             'created_dt',
             'deleted_flg'
         ]
+
+    def validate_pic_id(self, value: int):
+        r = MediaRequester()
+        token = get_token_from_request(self.context['request'])
+        try:
+            _ = r.get_image_info(value, token)
+            return value
+        except BaseApiRequestError:
+            raise serializers.ValidationError('Валидация на поле pic_id свалилась, проверьте его, либо попропуйте позже')
 
     def create(self, validated_data):
         new = PlaceImage.objects.create(**validated_data)
