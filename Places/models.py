@@ -99,7 +99,7 @@ class PlaceImage(models.Model):
     """
     created_by = models.PositiveIntegerField(null=False, blank=False)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='images')
-    pic_link = models.URLField(null=False, blank=False)
+    pic_id = models.PositiveIntegerField(null=False)
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)
 
