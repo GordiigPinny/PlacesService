@@ -347,6 +347,12 @@ class PlacesListTestCase(LocalBaseTestCase):
             'longitude': 30,
             'created_by': self.user.id,
         }
+        self.data_201_no_user_id = {
+            'name': 'POST',
+            'address': 'POST',
+            'latitude': 30,
+            'longitude': 30,
+        }
         self.data_400_1 = {
             'name': 'Not enough',
         }
@@ -370,14 +376,11 @@ class PlacesListTestCase(LocalBaseTestCase):
         self.assertEqual(len(response), 1, msg='Deleted instance in response')
 
     def testGet200_OnlyMine(self):
-        response = self.get_response_and_check_status(url=f'{self.path}?user_id={self.user.id}&only_mine=True')
+        response = self.get_response_and_check_status(url=f'{self.path}?only_mine=True')
         self.assertEqual(len(response), 1, msg='Response is empty')
 
-    def testGet200_EmptyOnlyMine(self):
-        response = self.get_response_and_check_status(url=f'{self.path}?user_id={self.user.id+1000}&only_mine=True')
-        self.assertEqual(len(response), 0, msg='Response is not empty')
-
-    def testGet400_OnlyMineWithoutUserId(self):
+    def testGet400_AuthServerError(self):
+        self.token.set_error(self.token.ERRORS_KEYS.AUTH, self.token.ERRORS.ERROR_TOKEN)
         _ = self.get_response_and_check_status(url=f'{self.path}?only_mine=True', expected_status_code=400)
 
     def testGet200_MapSector(self):
@@ -405,6 +408,17 @@ class PlacesListTestCase(LocalBaseTestCase):
     def testPost201_OK(self):
         _ = self.post_response_and_check_status(url=self.path, data=self.data_201)
 
+    def testPost201_NoUserId(self):
+        _ = self.post_response_and_check_status(url=self.path, data=self.data_201_no_user_id)
+
+    def testPost401_403_NotAuthenticated(self):
+        self.token.set_role(self.token.ROLES.ANON)
+        _ = self.post_response_and_check_status(url=self.path, data=self.data_201, expected_status_code=[401, 403])
+
+    def testPost400_AuthServiceError(self):
+        self.token.set_error(self.token.ERRORS_KEYS.AUTH, self.token.ERRORS.ERROR_TOKEN)
+        _ = self.post_response_and_check_status(url=self.path, data=self.data_201_no_user_id, expected_status_code=400)
+
     def testPost400_WrongJson(self):
         _ = self.post_response_and_check_status(url=self.path, data=self.data_400_1, expected_status_code=400)
 
@@ -422,7 +436,6 @@ class PlaceTestCase(LocalBaseTestCase):
             'address': 'PATCH',
             'latitude': 20,
             'longitude': 20,
-            'created_by': self.user.id,
         }
         self.data_400_1 = {
             'created_by': -1,
@@ -450,16 +463,23 @@ class PlaceTestCase(LocalBaseTestCase):
         _ = self.get_response_and_check_status(url=path, expected_status_code=404)
 
     def testPatch202_OK(self):
+        self.token.set_role(self.token.ROLES.SUPERUSER)
         self.patch_response_and_check_status(url=self.path, data=self.data_202)
 
-    def testPatch400_NegativeCreatedBy(self):
-        self.patch_response_and_check_status(url=self.path, data=self.data_400_1, expected_status_code=400)
+    def testPatch401_403_NotSuperuser(self):
+        self.patch_response_and_check_status(url=self.path, data=self.data_202, expected_status_code=[401, 403])
 
     def testPatch404_WrongId(self):
+        self.token.set_role(self.token.ROLES.SUPERUSER)
         self.patch_response_and_check_status(url=self.path_404, data=self.data_202, expected_status_code=404)
 
     def testDelete204_OK(self):
+        self.token.set_role(self.token.ROLES.SUPERUSER)
         self.delete_response_and_check_status(url=self.path)
 
+    def testDelete401_403_NotSuperuser(self):
+        self.delete_response_and_check_status(url=self.path, expected_status_code=[401, 403])
+
     def testDelete404_WrongId(self):
+        self.token.set_role(self.token.ROLES.SUPERUSER)
         self.delete_response_and_check_status(url=self.path_404, expected_status_code=404)

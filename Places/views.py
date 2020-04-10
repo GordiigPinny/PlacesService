@@ -4,8 +4,11 @@ from rest_framework.pagination import LimitOffsetPagination
 from Places.serializers import AcceptSerializer, RatingSerializer, PlaceImageSerializer, PlaceListSerializer, \
     PlaceDetailSerializer
 from Places.models import Accept, Rating, PlaceImage, Place
-from Places.permissions import WriteOnlyBySuperuser, WriteOnlyByModerator
+from Places.permissions import WriteOnlyBySuperuser, WriteOnlyByModerator, WriteOnlyByAuthenticated
 from ApiRequesters.Auth.permissions import IsAuthenticated
+from ApiRequesters.Auth.AuthRequester import AuthRequester
+from ApiRequesters.utils import get_token_from_request
+from ApiRequesters.exceptions import BaseApiRequestError
 
 
 class BaseListCreateView(ListCreateAPIView):
@@ -101,7 +104,7 @@ class PlacesListView(ListCreateAPIView):
     """
     Вьюха для получения списка мест
     """
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (WriteOnlyByAuthenticated, )
     serializer_class = PlaceListSerializer
     pagination_class = LimitOffsetPagination
 
@@ -114,10 +117,13 @@ class PlacesListView(ListCreateAPIView):
         only_mine = self.request.query_params.get('only_mine', 'False')
         only_mine = only_mine.lower() == 'true'
         if only_mine:
+            r = AuthRequester()
+            token = get_token_from_request(self.request)
             try:
-                lookup_fields['created_by'] = self.request.query_params['user_id']
-            except KeyError:
-                raise ValidationError('Для возврата только своих мест необходимо указать user_id')
+                _, auth_json = r.get_user_info(token)
+                lookup_fields['created_by'] = auth_json['id']
+            except BaseApiRequestError:
+                raise ValidationError('Не получается получить юзера по токену, попробуйте позже')
 
         latitude_1 = self.request.query_params.get('lat1', None)
         longitude_1 = self.request.query_params.get('long1', None)
