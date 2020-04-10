@@ -4,6 +4,8 @@ from rest_framework.pagination import LimitOffsetPagination
 from Places.serializers import AcceptSerializer, RatingSerializer, PlaceImageSerializer, PlaceListSerializer, \
     PlaceDetailSerializer
 from Places.models import Accept, Rating, PlaceImage, Place
+from Places.permissions import WriteOnlyBySuperuser, WriteOnlyByModerator
+from ApiRequesters.Auth.permissions import IsAuthenticated
 
 
 class BaseListCreateView(ListCreateAPIView):
@@ -43,6 +45,7 @@ class AcceptsListView(BaseListCreateView):
     Вьюха для просмотра списка подтверждений
     """
     model_class = Accept
+    permission_classes = (IsAuthenticated, )
     serializer_class = AcceptSerializer
     pagination_class = LimitOffsetPagination
 
@@ -52,6 +55,7 @@ class AcceptDetailView(BaseRetrieveDestroyView):
     Вьюха для получения и удаления определенного подтверждения
     """
     model_class = Accept
+    permission_classes = (IsAuthenticated, )
     serializer_class = AcceptSerializer
 
 
@@ -60,6 +64,7 @@ class RatingsListView(BaseListCreateView):
     Вьюха для просмотра списка рейтингов
     """
     model_class = Rating
+    permission_classes = (IsAuthenticated, )
     serializer_class = RatingSerializer
     pagination_class = LimitOffsetPagination
 
@@ -69,6 +74,7 @@ class RatingDetailView(BaseRetrieveDestroyView):
     Вьюха для получения и удаления рейтинга
     """
     model_class = Rating
+    permission_classes = (IsAuthenticated,)
     serializer_class = RatingSerializer
 
 
@@ -77,6 +83,7 @@ class PlaceImagesListView(BaseListCreateView):
     Вьюха для получения списка изображений места
     """
     model_class = PlaceImage
+    permission_classes = (WriteOnlyByModerator, )
     serializer_class = PlaceImageSerializer
     pagination_class = LimitOffsetPagination
 
@@ -86,6 +93,7 @@ class PlaceImageDetailView(BaseRetrieveDestroyView):
     Вьюха для получения и удаления картинки места
     """
     model_class = PlaceImage
+    permission_classes = (WriteOnlyByModerator,)
     serializer_class = PlaceImageSerializer
 
 
@@ -93,6 +101,7 @@ class PlacesListView(ListCreateAPIView):
     """
     Вьюха для получения списка мест
     """
+    permission_classes = (IsAuthenticated, )
     serializer_class = PlaceListSerializer
     pagination_class = LimitOffsetPagination
 
@@ -132,6 +141,7 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView):
     """
     Вьюха для получения, изменения и удаления места
     """
+    permission_classes = (WriteOnlyBySuperuser, )
     serializer_class = PlaceDetailSerializer
 
     def get_queryset(self):

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from Places.models import Place, Accept, Rating, PlaceImage
 from ApiRequesters.Media.MediaRequester import MediaRequester
+from ApiRequesters.Auth.AuthRequester import AuthRequester
 from ApiRequesters.utils import get_token_from_request
 from ApiRequesters.exceptions import BaseApiRequestError
 
@@ -13,7 +14,7 @@ class PlaceImageSerializer(serializers.ModelSerializer):
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
     pic_id = serializers.IntegerField(min_value=1, required=True, allow_null=False)
-    created_by = serializers.IntegerField(min_value=1, required=True)
+    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
 
     class Meta:
         model = PlaceImage
@@ -34,6 +35,17 @@ class PlaceImageSerializer(serializers.ModelSerializer):
             return value
         except BaseApiRequestError:
             raise serializers.ValidationError('Валидация на поле pic_id свалилась, проверьте его, либо попропуйте позже')
+
+    def validate_created_by(self, value):
+        if value:
+            return value
+        r = AuthRequester()
+        token = get_token_from_request(self.context['request'])
+        try:
+            _, auth_json = r.get_user_info(token)
+            return auth_json['id']
+        except BaseApiRequestError:
+            raise serializers.ValidationError('Не получается найти user_id по токену, попробуйте позже')
 
     def create(self, validated_data):
         new = PlaceImage.objects.create(**validated_data)
@@ -56,7 +68,7 @@ class RatingSerializer(serializers.ModelSerializer):
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
     current_rating = serializers.FloatField(read_only=True, source='place.rating')
-    created_by = serializers.IntegerField(min_value=1, required=True)
+    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
 
     class Meta:
         model = PlaceImage
@@ -69,6 +81,17 @@ class RatingSerializer(serializers.ModelSerializer):
             'created_dt',
             'deleted_flg'
         ]
+
+    def validate_created_by(self, value):
+        if value:
+            return value
+        r = AuthRequester()
+        token = get_token_from_request(self.context['request'])
+        try:
+            _, auth_json = r.get_user_info(token)
+            return auth_json['id']
+        except BaseApiRequestError:
+            raise serializers.ValidationError('Не получается найти user_id по токену, попробуйте позже')
 
     def create(self, validated_data):
         try:
@@ -95,7 +118,7 @@ class AcceptSerializer(serializers.ModelSerializer):
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
-    created_by = serializers.IntegerField(min_value=1, required=True)
+    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True)
 
     class Meta:
         model = Accept
@@ -106,6 +129,17 @@ class AcceptSerializer(serializers.ModelSerializer):
             'created_dt',
             'deleted_flg'
         ]
+
+    def validate_created_by(self, value):
+        if value:
+            return value
+        r = AuthRequester()
+        token = get_token_from_request(self.context['request'])
+        try:
+            _, auth_json = r.get_user_info(token)
+            return auth_json['id']
+        except BaseApiRequestError:
+            raise serializers.ValidationError('Не получается найти user_id по токену, попробуйте позже')
 
     def create(self, validated_data):
         place_id, created_by = validated_data['place'].id, validated_data['created_by']
@@ -130,7 +164,7 @@ class PlaceListSerializer(serializers.ModelSerializer):
     accepts_cnt = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     is_created_by_me = serializers.SerializerMethodField()
-    created_by = serializers.IntegerField(min_value=1, write_only=True, required=True)
+    created_by = serializers.IntegerField(min_value=1, required=True, default=None, allow_null=True, write_only=True)
 
     class Meta:
         model = Place
@@ -164,6 +198,17 @@ class PlaceListSerializer(serializers.ModelSerializer):
             return instance.created_by == user_id
         except KeyError:
             return False
+
+    def validate_created_by(self, value):
+        if value:
+            return value
+        r = AuthRequester()
+        token = get_token_from_request(self.context['request'])
+        try:
+            _, auth_json = r.get_user_info(token)
+            return auth_json['id']
+        except BaseApiRequestError:
+            raise serializers.ValidationError('Не получается найти user_id по токену, попробуйте позже')
 
     def create(self, validated_data):
         new = Place.objects.create(**validated_data)
