@@ -9,9 +9,10 @@ from ApiRequesters.Auth.permissions import IsAuthenticated
 from ApiRequesters.Auth.AuthRequester import AuthRequester
 from ApiRequesters.utils import get_token_from_request
 from ApiRequesters.exceptions import BaseApiRequestError
+from ApiRequesters.Stats.decorators import collect_request_stats_decorator, CollectStatsMixin
 
 
-class BaseListCreateView(ListCreateAPIView):
+class BaseListCreateView(ListCreateAPIView, CollectStatsMixin):
     """
     Базовый класс для ListCreate для Accept, Rating, PlaceImage
     """
@@ -27,8 +28,16 @@ class BaseListCreateView(ListCreateAPIView):
         else:
             return all_.filter(place_id=place_id)
 
+    @collect_request_stats_decorator()
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-class BaseRetrieveDestroyView(RetrieveDestroyAPIView):
+    @collect_request_stats_decorator()
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class BaseRetrieveDestroyView(RetrieveDestroyAPIView, CollectStatsMixin):
     """
     Базовый класс для RetriveDestroy для Accept, Rating, PlaceImage
     """
@@ -39,8 +48,16 @@ class BaseRetrieveDestroyView(RetrieveDestroyAPIView):
         with_deleted = with_deleted.lower() == 'true'
         return self.model_class.objects.with_deleted().all() if with_deleted else self.model_class.objects.all()
 
+    @collect_request_stats_decorator()
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
         instance.soft_delete()
+
+    @collect_request_stats_decorator()
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
 
 
 class AcceptsListView(BaseListCreateView):
@@ -100,7 +117,7 @@ class PlaceImageDetailView(BaseRetrieveDestroyView):
     serializer_class = PlaceImageSerializer
 
 
-class PlacesListView(ListCreateAPIView):
+class PlacesListView(ListCreateAPIView, CollectStatsMixin):
     """
     Вьюха для получения списка мест
     """
@@ -142,8 +159,16 @@ class PlacesListView(ListCreateAPIView):
             raise ValidationError('Для фильтрации по сектору карты нужны 4 координаты')
         return all_.filter(**lookup_fields)
 
+    @collect_request_stats_decorator()
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-class PlaceDetailView(RetrieveUpdateDestroyAPIView):
+    @collect_request_stats_decorator()
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class PlaceDetailView(RetrieveUpdateDestroyAPIView, CollectStatsMixin):
     """
     Вьюха для получения, изменения и удаления места
     """
@@ -155,6 +180,11 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView):
         with_deleted = with_deleted.lower() == 'true'
         return Place.objects.with_deleted().all() if with_deleted else Place.objects.all()
 
+    @collect_request_stats_decorator()
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @collect_request_stats_decorator()
     def update(self, request, *args, **kwargs):
         response = super().update(request, args, kwargs)
         if response.status_code == 200:
@@ -163,3 +193,7 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance: Place):
         instance.soft_delete()
+
+    @collect_request_stats_decorator()
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
