@@ -10,6 +10,7 @@ from ApiRequesters.Auth.AuthRequester import AuthRequester
 from ApiRequesters.utils import get_token_from_request
 from ApiRequesters.exceptions import BaseApiRequestError
 from ApiRequesters.Stats.decorators import collect_request_stats_decorator, CollectStatsMixin
+from ApiRequesters.Stats.StatsRequester import StatsRequester
 
 
 class BaseListCreateView(ListCreateAPIView, CollectStatsMixin):
@@ -31,10 +32,6 @@ class BaseListCreateView(ListCreateAPIView, CollectStatsMixin):
     @collect_request_stats_decorator()
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
-    @collect_request_stats_decorator()
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
 
 
 class BaseRetrieveDestroyView(RetrieveDestroyAPIView, CollectStatsMixin):
@@ -69,6 +66,19 @@ class AcceptsListView(BaseListCreateView):
     serializer_class = AcceptSerializer
     pagination_class = LimitOffsetPagination
 
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_accept_stats])
+    def post(self, request, *args, **kwargs):
+        self.additional_kwargs_for_stats_funcs = []
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'action': StatsRequester.ACCEPTS_ACTIONS.ACCEPTED,
+                'place_id': request.data['place_id'],
+                'request': request,
+            })
+        return super().post(request, *args, **kwargs)
+
 
 class AcceptDetailView(BaseRetrieveDestroyView):
     """
@@ -88,6 +98,20 @@ class RatingsListView(BaseListCreateView):
     serializer_class = RatingSerializer
     pagination_class = LimitOffsetPagination
 
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_rating_stats])
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'old_rating': Rating.objects.get(created_by=serializer['created_by'].value,
+                                                 place_id=request.data['place_id']).rating,
+                'new_rating': request.data['rating'],
+                'place_id': request.data['place_id'],
+                'request': request,
+            })
+        return super().post(request, *args, **kwargs), add_kwargs
+
 
 class RatingDetailView(BaseRetrieveDestroyView):
     """
@@ -106,6 +130,10 @@ class PlaceImagesListView(BaseListCreateView):
     permission_classes = (WriteOnlyByModerator, )
     serializer_class = PlaceImageSerializer
     pagination_class = LimitOffsetPagination
+
+    @collect_request_stats_decorator()
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class PlaceImageDetailView(BaseRetrieveDestroyView):
@@ -163,9 +191,19 @@ class PlacesListView(ListCreateAPIView, CollectStatsMixin):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
-    @collect_request_stats_decorator()
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'action': StatsRequester.PLACES_ACTIONS.CREATED,
+                'request': request,
+            })
+        resp = super().post(request, *args, **kwargs)
+        if resp.status_code == 201:
+            add_kwargs[0]['place_id'] = resp.data['id']
+        return resp, add_kwargs
 
 
 class PlaceDetailView(RetrieveUpdateDestroyAPIView, CollectStatsMixin):
@@ -180,20 +218,44 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView, CollectStatsMixin):
         with_deleted = with_deleted.lower() == 'true'
         return Place.objects.with_deleted().all() if with_deleted else Place.objects.all()
 
-    @collect_request_stats_decorator()
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-    @collect_request_stats_decorator()
-    def update(self, request, *args, **kwargs):
-        response = super().update(request, args, kwargs)
-        if response.status_code == 200:
-            response.status_code = 202
-        return response
-
     def perform_destroy(self, instance: Place):
         instance.soft_delete()
 
-    @collect_request_stats_decorator()
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'action': StatsRequester.PLACES_ACTIONS.OPENED,
+                'place_id': self.kwargs['pk'],
+                'request': request,
+            })
+        return super().get(request, *args, **kwargs), add_kwargs
+
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'action': StatsRequester.PLACES_ACTIONS.EDITED,
+                'place_id': self.kwargs['pk'],
+                'request': request,
+            })
+        response = super().update(request, args, kwargs)
+        if response.status_code == 200:
+            response.status_code = 202
+        return response, add_kwargs
+
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
     def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        add_kwargs = []
+        if serializer.is_valid():
+            add_kwargs.append({
+                'action': StatsRequester.PLACES_ACTIONS.DELETED,
+                'place_id': self.kwargs['pk'],
+                'request': request,
+            })
+        return super().delete(request, *args, **kwargs), add_kwargs
