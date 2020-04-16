@@ -149,3 +149,5 @@ except ImportError as e:
 
 APP_ID = ENV['PLACES_APP_ID']
 APP_SECRET = ENV['PLACES_SECRET']
+
+ALLOW_REQUESTS = True
