@@ -170,6 +170,10 @@ class PlacesListView(ListCreateAPIView, CollectStatsMixin):
             except BaseApiRequestError:
                 raise ValidationError('Не получается получить юзера по токену, попробуйте позже')
 
+        name = self.request.query_params.get('name', None)
+        if name:
+            lookup_fields['name__contains'] = name
+
         latitude_1 = self.request.query_params.get('lat1', None)
         longitude_1 = self.request.query_params.get('long1', None)
         latitude_2 = self.request.query_params.get('lat2', None)
