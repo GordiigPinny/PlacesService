@@ -117,6 +117,7 @@ class AcceptSerializer(serializers.ModelSerializer):
     """
     created_dt = serializers.DateTimeField(read_only=True)
     deleted_flg = serializers.BooleanField(required=False)
+    current_accept_type = serializers.CharField(read_only=True, source='place.accept_type')
     place_id = serializers.PrimaryKeyRelatedField(source='place', queryset=Place.objects.with_deleted().all())
     created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True)
 
@@ -125,6 +126,7 @@ class AcceptSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'created_by',
+            'current_accept_type',
             'place_id',
             'created_dt',
             'deleted_flg'
@@ -233,15 +235,15 @@ class PlaceDetailSerializer(PlaceListSerializer):
 
     def get_my_rating(self, instance: Place):
         try:
-            user_id = self.context['request'].query_params['user_id']
-            return Rating.objects.get(place_id=instance.id, created_by=user_id)
+            _, user_json = AuthRequester().get_user_info(get_token_from_request(self.context['request']))
+            return Rating.objects.get(place_id=instance.id, created_by=user_json['id']).rating
         except (KeyError, Rating.DoesNotExist):
             return 0
 
     def get_is_accepted_by_me(self, instance: Place):
         try:
-            user_id = self.context['request'].query_params['user_id']
-            return Accept.objects.filter(place_id=instance.id, created_by=user_id).exists()
+            _, user_json = AuthRequester().get_user_info(get_token_from_request(self.context['request']))
+            return Accept.objects.filter(place_id=instance.id, created_by=user_json['id']).exists()
         except KeyError:
             return False
 

@@ -102,14 +102,19 @@ class RatingsListView(BaseListCreateView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         add_kwargs = []
-        if serializer.is_valid():
-            add_kwargs.append({
-                'old_rating': Rating.objects.get(created_by=serializer['created_by'].value,
-                                                 place_id=request.data['place_id']).rating,
-                'new_rating': request.data['rating'],
-                'place_id': request.data['place_id'],
-                'request': request,
-            })
+        serializer.is_valid(raise_exception=True)
+        fst_old_rating = Rating.objects\
+            .with_deleted()\
+            .filter(created_by=serializer['created_by'].value, place_id=request.data['place_id'])\
+            .order_by('-created_dt')\
+            .first()
+        old_rating = fst_old_rating.rating if fst_old_rating is not None else 0
+        add_kwargs.append({
+            'old_rating': old_rating,
+            'new_rating': request.data['rating'],
+            'place_id': request.data['place_id'],
+            'request': request,
+        })
         return super().post(request, *args, **kwargs), add_kwargs
 
 
