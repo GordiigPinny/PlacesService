@@ -68,7 +68,6 @@ class AcceptsListView(BaseListCreateView):
 
     @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_accept_stats])
     def post(self, request, *args, **kwargs):
-        self.additional_kwargs_for_stats_funcs = []
         serializer = self.get_serializer(data=request.data)
         add_kwargs = []
         if serializer.is_valid():
@@ -77,7 +76,7 @@ class AcceptsListView(BaseListCreateView):
                 'place_id': request.data['place_id'],
                 'request': request,
             })
-        return super().post(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs), add_kwargs
 
 
 class AcceptDetailView(BaseRetrieveDestroyView):
@@ -87,6 +86,19 @@ class AcceptDetailView(BaseRetrieveDestroyView):
     model_class = Accept
     permission_classes = (IsAuthenticated, )
     serializer_class = AcceptSerializer
+
+    @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_accept_stats])
+    def delete(self, request, *args, **kwargs):
+        try:
+            accept = Accept.objects.get(id=self.kwargs['pk'])
+        except Accept.DoesNotExist:
+            return super().delete(request, *args, **kwargs)
+        add_kwargs = [{
+            'action': StatsRequester.ACCEPTS_ACTIONS.DECLINED,
+            'place_id': accept.place_id,
+            'request': request,
+        }]
+        return super().delete(request, *args, **kwargs), add_kwargs
 
 
 class RatingsListView(BaseListCreateView):
@@ -232,14 +244,11 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView, CollectStatsMixin):
 
     @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
     def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        add_kwargs = []
-        if serializer.is_valid():
-            add_kwargs.append({
-                'action': StatsRequester.PLACES_ACTIONS.OPENED,
-                'place_id': self.kwargs['pk'],
-                'request': request,
-            })
+        add_kwargs = [{
+            'action': StatsRequester.PLACES_ACTIONS.OPENED,
+            'place_id': self.kwargs['pk'],
+            'request': request,
+        }]
         return super().get(request, *args, **kwargs), add_kwargs
 
     @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
@@ -259,12 +268,9 @@ class PlaceDetailView(RetrieveUpdateDestroyAPIView, CollectStatsMixin):
 
     @collect_request_stats_decorator(another_stats_funcs=[CollectStatsMixin.collect_place_stats])
     def delete(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        add_kwargs = []
-        if serializer.is_valid():
-            add_kwargs.append({
-                'action': StatsRequester.PLACES_ACTIONS.DELETED,
-                'place_id': self.kwargs['pk'],
-                'request': request,
-            })
+        add_kwargs = [{
+            'action': StatsRequester.PLACES_ACTIONS.DELETED,
+            'place_id': self.kwargs['pk'],
+            'request': request,
+        }]
         return super().delete(request, *args, **kwargs), add_kwargs
