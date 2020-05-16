@@ -129,7 +129,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = '/static/'
 
@@ -151,3 +151,9 @@ APP_ID = ENV['PLACES_APP_ID']
 APP_SECRET = ENV['PLACES_SECRET']
 
 ALLOW_REQUESTS = True
+
+ON_HEROKU = not (os.getenv('ON_HEROKU', '0') == '0')
+
+if not DEBUG:
+    import django_heroku
+    django_heroku.settings(locals(), databases=ON_HEROKU, test_runner=False, secret_key=False)
