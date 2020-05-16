@@ -46,6 +46,7 @@ THIRD_PARTY_APPS = [
 ]
 
 DEV_APPS = [
+    'Places',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + DEV_APPS
@@ -128,7 +129,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = '/static/'
 
@@ -136,13 +137,23 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MEDIA_URL = '/media/'
 
-ENV_FILE_NAME = 'prod.env'
-
-TESTING = sys.argv[1:2] == ['test']
-
 try:
     from .settings_local import *
 except ImportError:
     pass
 
-ENV = dotenv.main.dotenv_values(ENV_FILE_NAME)
+try:
+    from ApiRequesters.settings import *
+except ImportError as e:
+    raise e
+
+APP_ID = ENV['PLACES_APP_ID']
+APP_SECRET = ENV['PLACES_SECRET']
+
+ALLOW_REQUESTS = True
+
+ON_HEROKU = not (os.getenv('ON_HEROKU', '0') == '0')
+
+if not DEBUG:
+    import django_heroku
+    django_heroku.settings(locals(), databases=ON_HEROKU, test_runner=False, secret_key=False)
