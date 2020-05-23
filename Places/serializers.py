@@ -237,14 +237,14 @@ class PlaceDetailSerializer(PlaceListSerializer):
         try:
             _, user_json = AuthRequester().get_user_info(get_token_from_request(self.context['request']))
             return Rating.objects.get(place_id=instance.id, created_by=user_json['id']).rating
-        except (KeyError, Rating.DoesNotExist):
+        except (KeyError, Rating.DoesNotExist, BaseApiRequestError):
             return 0
 
     def get_is_accepted_by_me(self, instance: Place):
         try:
             _, user_json = AuthRequester().get_user_info(get_token_from_request(self.context['request']))
             return Accept.objects.filter(place_id=instance.id, created_by=user_json['id']).exists()
-        except KeyError:
+        except (KeyError, BaseApiRequestError):
             return False
 
     def update(self, instance: Place, validated_data):
