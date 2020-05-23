@@ -166,6 +166,8 @@ class PlaceListSerializer(serializers.ModelSerializer):
     accepts_cnt = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     is_created_by_me = serializers.SerializerMethodField()
+    latitude = serializers.FloatField(min_value=55.515174, max_value=56.106229)
+    longitude = serializers.FloatField(min_value=36.994695, max_value=37.956703)
     created_by = serializers.IntegerField(min_value=1, required=False, default=None, allow_null=True, write_only=True)
 
     class Meta:
