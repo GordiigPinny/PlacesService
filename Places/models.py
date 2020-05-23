@@ -11,7 +11,6 @@ class Place(models.Model):
     latitude = models.FloatField(null=False, blank=False)
     longitude = models.FloatField(null=False, blank=False)
     address = models.CharField(max_length=512, null=False, blank=False)
-    checked_by_moderator = models.BooleanField(default=False)
     created_by = models.PositiveIntegerField(null=False, blank=False)
     created_dt = models.DateTimeField(auto_now_add=True)
     deleted_flg = models.BooleanField(default=False)

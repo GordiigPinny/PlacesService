@@ -178,7 +178,6 @@ class PlaceListSerializer(serializers.ModelSerializer):
             'latitude',
             'longitude',
             'address',
-            'checked_by_moderator',
             'rating',
             'accept_type',
             'accepts_cnt',

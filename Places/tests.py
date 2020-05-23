@@ -343,23 +343,29 @@ class PlacesListTestCase(LocalBaseTestCase):
         self.data_201 = {
             'name': 'POST',
             'address': 'POST',
-            'latitude': 30,
-            'longitude': 30,
+            'latitude': 56,
+            'longitude': 37,
             'created_by': self.user.id,
         }
         self.data_201_no_user_id = {
             'name': 'POST',
             'address': 'POST',
-            'latitude': 30,
-            'longitude': 30,
+            'latitude': 56,
+            'longitude': 37,
         }
         self.data_400_1 = {
             'name': 'Not enough',
         }
+        self.data_400_2 = {
+            'name': 'POST',
+            'address': 'POST',
+            'latitude': 20,
+            'longitude': 20,
+        }
 
     def testGet200_OK(self):
         response = self.get_response_and_check_status(url=self.path)
-        self.fields_test(response, ['id', 'name', 'address', 'latitude', 'longitude', 'checked_by_moderator',
+        self.fields_test(response, ['id', 'name', 'address', 'latitude', 'longitude',
                                     'accept_type', 'accepts_cnt', 'rating', 'is_created_by_me'])
         self.list_test(response, Place)
 
@@ -422,6 +428,9 @@ class PlacesListTestCase(LocalBaseTestCase):
     def testPost400_WrongJson(self):
         _ = self.post_response_and_check_status(url=self.path, data=self.data_400_1, expected_status_code=400)
 
+    def testPost400_WrongLatAndLong(self):
+        _ = self.post_response_and_check_status(url=self.path, data=self.data_400_2, expected_status_code=400)
+
 
 class PlaceTestCase(LocalBaseTestCase):
     """
@@ -434,16 +443,22 @@ class PlaceTestCase(LocalBaseTestCase):
         self.data_202 = {
             'name': 'PATCH',
             'address': 'PATCH',
-            'latitude': 20,
-            'longitude': 20,
+            'latitude': 56,
+            'longitude': 37,
         }
         self.data_400_1 = {
             'created_by': -1,
         }
+        self.data_400_2 = {
+            'name': 'PATCH',
+            'address': 'PATCH',
+            'latitude': 20,
+            'longitude': 20,
+        }
 
     def testGet200_OK(self):
         response = self.get_response_and_check_status(url=self.path)
-        self.fields_test(response, ['id', 'name', 'address', 'latitude', 'longitude', 'checked_by_moderator',
+        self.fields_test(response, ['id', 'name', 'address', 'latitude', 'longitude',
                                     'accept_type', 'accepts_cnt', 'rating', 'is_created_by_me', 'is_accepted_by_me',
                                     'my_rating', 'created_by'])
 
@@ -465,6 +480,10 @@ class PlaceTestCase(LocalBaseTestCase):
     def testPatch202_OK(self):
         self.token.set_role(self.token.ROLES.SUPERUSER)
         self.patch_response_and_check_status(url=self.path, data=self.data_202)
+
+    def testPatch400_WrongLatAndLong(self):
+        self.token.set_role(self.token.ROLES.SUPERUSER)
+        self.patch_response_and_check_status(url=self.path, data=self.data_400_2, expected_status_code=400)
 
     def testPatch401_403_NotSuperuser(self):
         self.patch_response_and_check_status(url=self.path, data=self.data_202, expected_status_code=[401, 403])
