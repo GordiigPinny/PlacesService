@@ -8,7 +8,7 @@ class LocalBaseTestCase(BaseTestCase):
     """
     def setUp(self):
         super().setUp()
-        self.place = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        self.place = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                           created_by=self.user.id)
         self.accept = Accept.objects.create(created_by=self.user.id, place=self.place)
         self.rating = Rating.objects.create(created_by=self.user.id, place=self.place, rating=4)
@@ -22,7 +22,7 @@ class AcceptsListTestCase(LocalBaseTestCase):
     def setUp(self):
         super().setUp()
         self.path = self.url_prefix + 'accepts/'
-        self.new_place = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        self.new_place = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                               created_by=self.user.id)
         self.data_201 = {
             'created_by': self.user.id,
@@ -370,13 +370,13 @@ class PlacesListTestCase(LocalBaseTestCase):
         self.list_test(response, Place)
 
     def testGet200_WithDeletedQueryParam(self):
-        deleted = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        deleted = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                        created_by=self.user.id, deleted_flg=True)
         response = self.get_response_and_check_status(url=f'{self.path}?with_deleted=True')
         self.assertEqual(len(response), 2, msg='No deleted instance in response')
 
     def testGet200_NoDeletedQueryParam(self):
-        deleted = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        deleted = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                        created_by=self.user.id, deleted_flg=True)
         response = self.get_response_and_check_status(url=f'{self.path}')
         self.assertEqual(len(response), 1, msg='Deleted instance in response')
@@ -463,7 +463,7 @@ class PlaceTestCase(LocalBaseTestCase):
                                     'my_rating', 'created_by'])
 
     def testGet200_WithDeletedQueryParam(self):
-        deleted = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        deleted = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                        created_by=self.user.id, deleted_flg=True)
         path = self.url_prefix + f'places/{deleted.id}/?with_deleted=True'
         _ = self.get_response_and_check_status(url=path)
@@ -472,7 +472,7 @@ class PlaceTestCase(LocalBaseTestCase):
         _ = self.get_response_and_check_status(url=self.path_404, expected_status_code=404)
 
     def testGet404_NoDeletedQueryParam(self):
-        deleted = Place.objects.create(name='Test', latitude=10, longitude=10, address='Test',
+        deleted = Place.objects.create(name='Test', latitude=56, longitude=37, address='Test',
                                        created_by=self.user.id, deleted_flg=True)
         path = self.url_prefix + f'places/{deleted.id}/'
         _ = self.get_response_and_check_status(url=path, expected_status_code=404)
