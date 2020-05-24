@@ -46,6 +46,12 @@ class Place(models.Model):
     def __str__(self):
         return f'Place {self.name}'
 
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(latitude__gte=55.515174) & Q(latitude__lte=56.106229), name='lat_msk_constraint'),
+            CheckConstraint(check=Q(longitude__gte=36.994695) & Q(longitude__lte=37.956703), name='long_msk_constraint'),
+        ]
+
 
 class Accept(models.Model):
     """
