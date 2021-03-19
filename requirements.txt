@@ -1,5 +1,5 @@
 django==3.0.4
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 djangorestframework-jwt==1.11.0
 
 channels==2.4.0
